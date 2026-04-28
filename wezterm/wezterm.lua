@@ -183,12 +183,25 @@ local PROC_ICONS = {
 
 local function basename(s) return (s or ''):match '([^/]+)$' or s end
 
-local function tab_icon(pane)
-  local proc = basename(pane.foreground_process_name)
-  return PROC_ICONS[proc] or ' '
-end
 
 local SHELLS = { zsh = true, bash = true, fish = true, sh = true, ['-zsh'] = true }
+
+-- Detect apps WezTerm can't see via foreground_process_name (they live inside
+-- the shell process tree or only announce themselves via terminal title).
+local function detect_from_title(title)
+  if not title or title == '' then return nil end
+  if title:find 'Claude Code' or title:match '^claude' then return 'claude' end
+  if title:find 'lazygit' then return 'lazygit' end
+  if title:find 'btop' then return 'btop' end
+  return nil
+end
+
+local function tab_proc(pane)
+  local detected = detect_from_title(pane.title)
+  if detected then return detected end
+  local p = basename(pane.foreground_process_name)
+  return (p and #p > 0) and p or nil
+end
 
 wezterm.on('format-tab-title', function(tab, tabs, _panes, _conf, hover, _max_w)
   local pane = tab.active_pane
@@ -201,16 +214,15 @@ wezterm.on('format-tab-title', function(tab, tabs, _panes, _conf, hover, _max_w)
     cwd_name = basename(p)
   end
 
-  local proc = basename(pane.foreground_process_name)
+  local proc = tab_proc(pane)
   local label
-  if proc and #proc > 0 and not SHELLS[proc] then
-    -- Foreground program isn't a shell — surface its name so e.g. "claude" is visible
+  if proc and not SHELLS[proc] then
     label = (cwd_name and (cwd_name .. ' · ' .. proc)) or proc
   else
-    label = cwd_name or pane.title or 'shell'
+    label = cwd_name or 'shell'
   end
 
-  local icon = tab_icon(pane)
+  local icon = (proc and PROC_ICONS[proc]) or ' '
   local body = idx .. ' ' .. icon .. label .. ' '
 
   local is_last = tab.tab_index == #tabs - 1
