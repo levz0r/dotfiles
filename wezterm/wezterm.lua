@@ -49,7 +49,7 @@ local config = {
   use_fancy_tab_bar = false,
   hide_tab_bar_if_only_one_tab = false,
   tab_bar_at_bottom = false,
-  tab_max_width = 32,
+  tab_max_width = 22,
   show_new_tab_button_in_tab_bar = false,
 
   -- Behavior
@@ -237,6 +237,9 @@ wezterm.on('format-tab-title', function(tab, tabs, _panes, _conf, hover, _max_w)
   else
     label = cwd_name or 'shell'
   end
+
+  -- Truncate overlong labels so the right-status bar stays visible
+  if #label > 18 then label = label:sub(1, 17) .. '…' end
 
   local icon = (proc and PROC_ICONS[proc]) or ' '
   local body = idx .. ' ' .. icon .. label .. ' '
