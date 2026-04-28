@@ -216,7 +216,19 @@ wezterm.on('format-tab-title', function(tab, tabs, _panes, _conf, hover, _max_w)
 
   local proc = tab_proc(pane)
   local label
-  if proc and not SHELLS[proc] then
+  if proc == 'claude' then
+    -- Claude Code sets the terminal title to its session name; strip the
+    -- "Claude Code <version>" boilerplate so only the session label remains.
+    local t = pane.title or ''
+    t = t:gsub('Claude Code%s*v?[%d%.]+%s*[—–-]?%s*', '')
+    t = t:gsub('Claude Code%s*[—–-]?%s*', '')
+    t = t:gsub('^%s+', ''):gsub('%s+$', '')
+    if t == '' or t:match '^[%d%.]+$' then
+      label = (cwd_name and (cwd_name .. ' · claude')) or 'claude'
+    else
+      label = t
+    end
+  elseif proc and not SHELLS[proc] then
     label = (cwd_name and (cwd_name .. ' · ' .. proc)) or proc
   else
     label = cwd_name or 'shell'
