@@ -151,33 +151,34 @@ config.colors.tab_bar = {
 }
 
 -- Map known process names to Nerd Font icons
+-- All Material Design icons (md-* in Symbols Nerd Font Mono)
 local PROC_ICONS = {
-  ['nvim']     = ' ',
-  ['vim']      = ' ',
-  ['nano']     = ' ',
-  ['node']     = ' ',
-  ['npm']      = ' ',
-  ['pnpm']     = ' ',
-  ['bun']      = ' ',
-  ['python']   = ' ',
-  ['python3']  = ' ',
-  ['ruby']     = ' ',
-  ['cargo']    = ' ',
-  ['rustc']    = ' ',
-  ['go']       = ' ',
-  ['git']      = ' ',
-  ['lazygit']  = ' ',
-  ['docker']   = ' ',
-  ['psql']     = ' ',
-  ['mysql']    = ' ',
-  ['ssh']      = ' ',
-  ['htop']     = ' ',
-  ['btop']     = ' ',
-  ['top']      = ' ',
-  ['claude']   = ' ',
-  ['zsh']      = ' ',
-  ['bash']     = ' ',
-  ['fish']     = ' ',
+  ['nvim']     = '󰈚 ',  -- file-document-edit
+  ['vim']      = '󰈚 ',
+  ['nano']     = '󰈚 ',
+  ['node']     = '󰎙 ',  -- nodejs
+  ['npm']      = '󰎙 ',
+  ['pnpm']     = '󰎙 ',
+  ['bun']      = '󰎙 ',
+  ['python']   = '󰌠 ',  -- language-python
+  ['python3']  = '󰌠 ',
+  ['ruby']     = '󰴭 ',  -- language-ruby
+  ['cargo']    = '󱘗 ',  -- language-rust
+  ['rustc']    = '󱘗 ',
+  ['go']       = '󰟓 ',  -- language-go
+  ['git']      = '󰊢 ',  -- git
+  ['lazygit']  = '󰊢 ',
+  ['docker']   = '󰡨 ',  -- docker
+  ['psql']     = '󰆼 ',  -- database
+  ['mysql']    = '󰆼 ',
+  ['ssh']      = '󰣀 ',  -- server-network
+  ['htop']     = '󰓅 ',  -- speedometer
+  ['btop']     = '󰓅 ',
+  ['top']      = '󰓅 ',
+  ['claude']   = '󰚩 ',  -- robot
+  ['zsh']      = '󰞷 ',  -- console
+  ['bash']     = '󰞷 ',
+  ['fish']     = '󰞷 ',
 }
 
 local function basename(s) return (s or ''):match '([^/]+)$' or s end
@@ -187,16 +188,26 @@ local function tab_icon(pane)
   return PROC_ICONS[proc] or ' '
 end
 
+local SHELLS = { zsh = true, bash = true, fish = true, sh = true, ['-zsh'] = true }
+
 wezterm.on('format-tab-title', function(tab, tabs, _panes, _conf, hover, _max_w)
   local pane = tab.active_pane
   local idx  = tab.tab_index + 1
 
-  local label = pane.title or 'shell'
+  local cwd_name
   local cwd = pane.current_working_dir
   if cwd then
     local p = (cwd.file_path or tostring(cwd)):gsub('/$', '')
-    local name = basename(p)
-    if name and #name > 0 then label = name end
+    cwd_name = basename(p)
+  end
+
+  local proc = basename(pane.foreground_process_name)
+  local label
+  if proc and #proc > 0 and not SHELLS[proc] then
+    -- Foreground program isn't a shell — surface its name so e.g. "claude" is visible
+    label = (cwd_name and (cwd_name .. ' · ' .. proc)) or proc
+  else
+    label = cwd_name or pane.title or 'shell'
   end
 
   local icon = tab_icon(pane)
