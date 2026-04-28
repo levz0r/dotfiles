@@ -200,6 +200,8 @@ local function tab_proc(pane)
   local detected = detect_from_title(pane.title)
   if detected then return detected end
   local p = basename(pane.foreground_process_name)
+  -- Claude Code renames its process to its version string (e.g. "2.1.121")
+  if p and p:match '^v?[%d]+%.[%d]+%.[%d]+' then return 'claude' end
   return (p and #p > 0) and p or nil
 end
 
@@ -217,14 +219,16 @@ wezterm.on('format-tab-title', function(tab, tabs, _panes, _conf, hover, _max_w)
   local proc = tab_proc(pane)
   local label
   if proc == 'claude' then
-    -- Claude Code sets the terminal title to "<session> · <version>".
-    -- Strip the trailing version so only the session label remains.
     local t = pane.title or ''
+    -- Strip "Claude Code" anywhere; strip a trailing " · 2.1.121"
+    t = t:gsub('Claude Code', '')
     t = t:gsub('%s*[·•|—–-]%s*v?%d+%.%d+%.%d+[%w%.%-]*%s*$', '')
-    t = t:gsub('^Claude Code%s*[—–·-]?%s*', '')
+    -- Strip dirty/unread markers like "*" or "✳" used by some apps
+    t = t:gsub('^[%*✳%s]+', ''):gsub('[%*✳%s]+$', '')
+    t = t:gsub('^[·•|—–-]%s*', ''):gsub('%s*[·•|—–-]$', '')
     t = t:gsub('^%s+', ''):gsub('%s+$', '')
     if t == '' or t:match '^v?[%d%.]+$' then
-      label = (cwd_name and (cwd_name .. ' · claude')) or 'claude'
+      label = cwd_name or 'claude'
     else
       label = t
     end
